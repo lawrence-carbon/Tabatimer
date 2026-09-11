@@ -1,5 +1,15 @@
 (() => {
   const PREPARE_SECONDS = 5;
+  const SOUND_KEY = "tabatimer-sound";
+  const SOUND_DEFAULTS = {
+    tickEachSecond: false,
+    repStart: true,
+    repEnd: false,
+    setStart: true,
+    setEnd: true,
+    restPulse: false,
+    volume: 0.7,
+  };
 
   const els = {
     setup: document.getElementById("setup"),
@@ -22,6 +32,14 @@
     btnAgain: document.getElementById("btn-again"),
     btnEdit: document.getElementById("btn-edit"),
     doneCopy: document.getElementById("done-copy"),
+    soundTick: document.getElementById("sound-tick"),
+    soundRepStart: document.getElementById("sound-rep-start"),
+    soundRepEnd: document.getElementById("sound-rep-end"),
+    soundSetStart: document.getElementById("sound-set-start"),
+    soundSetEnd: document.getElementById("sound-set-end"),
+    soundRestPulse: document.getElementById("sound-rest-pulse"),
+    soundVolume: document.getElementById("sound-volume"),
+    volumeValue: document.getElementById("volume-value"),
   };
 
   /** @type {{ work: number, rest: number, reps: number, sets: number, setRest: number } | null} */
@@ -36,6 +54,72 @@
   let lastTs = 0;
   /** @type {AudioContext | null} */
   let audioCtx = null;
+  /** @type {GainNode | null} */
+  let masterGain = null;
+  let sound = loadSoundPrefs();
+  let restPulseAcc = 0;
+
+  function clampInt(value, min, max) {
+    const n = Number.parseInt(String(value), 10);
+    if (Number.isNaN(n)) return min;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function clampNumber(value, min, max) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return min;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function loadSoundPrefs() {
+    try {
+      const raw = localStorage.getItem(SOUND_KEY);
+      if (!raw) return { ...SOUND_DEFAULTS };
+      const parsed = JSON.parse(raw);
+      return {
+        tickEachSecond: Boolean(parsed.tickEachSecond),
+        repStart: parsed.repStart !== false,
+        repEnd: Boolean(parsed.repEnd),
+        setStart: parsed.setStart !== false,
+        setEnd: parsed.setEnd !== false,
+        restPulse: Boolean(parsed.restPulse),
+        volume: clampNumber(parsed.volume ?? SOUND_DEFAULTS.volume, 0, 1),
+      };
+    } catch {
+      return { ...SOUND_DEFAULTS };
+    }
+  }
+
+  function saveSoundPrefs() {
+    localStorage.setItem(SOUND_KEY, JSON.stringify(sound));
+  }
+
+  function syncSoundUi() {
+    els.soundTick.checked = sound.tickEachSecond;
+    els.soundRepStart.checked = sound.repStart;
+    els.soundRepEnd.checked = sound.repEnd;
+    els.soundSetStart.checked = sound.setStart;
+    els.soundSetEnd.checked = sound.setEnd;
+    els.soundRestPulse.checked = sound.restPulse;
+    els.soundVolume.value = String(Math.round(sound.volume * 100));
+    els.volumeValue.textContent = `${Math.round(sound.volume * 100)}%`;
+    if (masterGain) masterGain.gain.value = sound.volume;
+  }
+
+  function readSoundFromUi() {
+    sound = {
+      tickEachSecond: els.soundTick.checked,
+      repStart: els.soundRepStart.checked,
+      repEnd: els.soundRepEnd.checked,
+      setStart: els.soundSetStart.checked,
+      setEnd: els.soundSetEnd.checked,
+      restPulse: els.soundRestPulse.checked,
+      volume: clampNumber(Number(els.soundVolume.value) / 100, 0, 1),
+    };
+    els.volumeValue.textContent = `${Math.round(sound.volume * 100)}%`;
+    if (masterGain) masterGain.gain.value = sound.volume;
+    saveSoundPrefs();
+  }
 
   function readConfig() {
     return {
@@ -45,12 +129,6 @@
       sets: clampInt(els.sets.value, 1, 20),
       setRest: clampInt(els.setRest.value, 0, 900),
     };
-  }
-
-  function clampInt(value, min, max) {
-    const n = Number.parseInt(String(value), 10);
-    if (Number.isNaN(n)) return min;
-    return Math.min(max, Math.max(min, n));
   }
 
   function formatDuration(totalSeconds) {
@@ -133,44 +211,78 @@
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
       audioCtx = new Ctx();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = sound.volume;
+      masterGain.connect(audioCtx.destination);
     }
-    if (audioCtx.state === "suspended") {
-      audioCtx.resume();
-    }
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    if (masterGain) masterGain.gain.value = sound.volume;
     return audioCtx;
   }
 
   function beep(kind) {
     const ctx = ensureAudio();
-    if (!ctx) return;
+    if (!ctx || !masterGain || sound.volume <= 0) return;
 
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(masterGain);
 
-    if (kind === "work") {
+    if (kind === "rep-start") {
       osc.frequency.value = 880;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.22, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
       osc.start(now);
-      osc.stop(now + 0.2);
-    } else if (kind === "rest") {
-      osc.frequency.value = 523.25;
+      osc.stop(now + 0.18);
+    } else if (kind === "rep-end") {
+      osc.frequency.value = 740;
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.exponentialRampToValueAtTime(0.16, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      osc.start(now);
+      osc.stop(now + 0.14);
+    } else if (kind === "set-start") {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(660, now);
+      osc.frequency.setValueAtTime(880, now + 0.08);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.2, now + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
       osc.start(now);
       osc.stop(now + 0.24);
+    } else if (kind === "set-end") {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(554, now + 0.1);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+      osc.start(now);
+      osc.stop(now + 0.28);
+    } else if (kind === "ready" || kind === "rest") {
+      osc.frequency.value = 523.25;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.14, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } else if (kind === "rest-pulse") {
+      osc.frequency.value = 392;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.05, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      osc.start(now);
+      osc.stop(now + 0.14);
     } else if (kind === "tick") {
       osc.frequency.value = 660;
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.07, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
       osc.start(now);
-      osc.stop(now + 0.09);
+      osc.stop(now + 0.08);
     } else {
       osc.type = "triangle";
       osc.frequency.setValueAtTime(523.25, now);
@@ -181,6 +293,29 @@
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
       osc.start(now);
       osc.stop(now + 0.48);
+    }
+  }
+
+  function announceLeaving(step) {
+    if (!step || step.kind !== "work" || !config) return;
+    if (step.rep === config.reps && sound.setEnd) beep("set-end");
+    else if (sound.repEnd) beep("rep-end");
+  }
+
+  function announceEntering(step) {
+    if (step.kind === "ready") {
+      beep("ready");
+      return;
+    }
+    if (step.kind === "work") {
+      if (step.rep === 1 && sound.setStart) beep("set-start");
+      else if (sound.repStart) beep("rep-start");
+      return;
+    }
+    if (step.kind === "rest" || step.kind === "set-rest") {
+      const coveredByEnd =
+        sound.repEnd || (step.kind === "set-rest" && sound.setEnd);
+      if (!coveredByEnd) beep("rest");
     }
   }
 
@@ -202,7 +337,7 @@
 
   function renderStep() {
     const step = timeline[stepIndex];
-    if (!step) return;
+    if (!step || !config) return;
 
     els.phaseLabel.textContent = step.label;
     els.clock.textContent = formatClock(remainingMs);
@@ -214,28 +349,33 @@
   }
 
   function enterStep(index, { silent = false } = {}) {
+    const previous = timeline[stepIndex];
+    if (!silent && previous && index !== stepIndex) {
+      announceLeaving(previous);
+    }
+
     stepIndex = index;
     const step = timeline[stepIndex];
     if (!step) {
-      finishSession();
+      finishSession({ fromWork: previous?.kind === "work" });
       return;
     }
 
     stepTotalMs = step.seconds * 1000;
     remainingMs = stepTotalMs;
+    restPulseAcc = 0;
     renderStep();
-
-    if (!silent) {
-      if (step.kind === "work") beep("work");
-      else if (step.kind === "rest" || step.kind === "set-rest") beep("rest");
-      else beep("tick");
-    }
+    if (!silent) announceEntering(step);
   }
 
-  function finishSession() {
+  function finishSession({ fromWork = false } = {}) {
     stopLoop();
     running = false;
     els.session.classList.remove("is-paused");
+    if (fromWork && config) {
+      if (sound.setEnd) beep("set-end");
+      else if (sound.repEnd) beep("rep-end");
+    }
     els.doneCopy.textContent = config
       ? `You crushed ${config.sets} set${config.sets === 1 ? "" : "s"} · ${config.reps} reps · ${formatDuration(config.work)} work.`
       : "You finished the full block.";
@@ -249,19 +389,30 @@
     const delta = ts - lastTs;
     lastTs = ts;
 
+    const step = timeline[stepIndex];
     const prevWhole = Math.ceil(remainingMs / 1000);
     remainingMs -= delta;
     const nextWhole = Math.ceil(Math.max(0, remainingMs) / 1000);
 
-    if (nextWhole > 0 && nextWhole < prevWhole && nextWhole <= 3) {
+    if (nextWhole > 0 && nextWhole < prevWhole && sound.tickEachSecond) {
       beep("tick");
     }
 
-    if (remainingMs <= 0) {
-      enterStep(stepIndex + 1);
-    } else {
-      renderStep();
+    if (
+      step &&
+      (step.kind === "rest" || step.kind === "set-rest") &&
+      sound.restPulse &&
+      remainingMs > 0
+    ) {
+      restPulseAcc += delta;
+      if (restPulseAcc >= 2000) {
+        restPulseAcc = 0;
+        beep("rest-pulse");
+      }
     }
+
+    if (remainingMs <= 0) enterStep(stepIndex + 1);
+    else renderStep();
 
     rafId = requestAnimationFrame(tick);
   }
@@ -306,9 +457,7 @@
     if (!timeline.length) return;
     ensureAudio();
     enterStep(stepIndex + 1);
-    if (running) {
-      lastTs = 0;
-    }
+    if (running) lastTs = 0;
   }
 
   function endSession() {
@@ -326,7 +475,26 @@
     startSession(config);
   }
 
-  els.form.addEventListener("input", updateSummary);
+  function isSoundControl(target) {
+    return (
+      target === els.soundTick ||
+      target === els.soundRepStart ||
+      target === els.soundRepEnd ||
+      target === els.soundSetStart ||
+      target === els.soundSetEnd ||
+      target === els.soundRestPulse ||
+      target === els.soundVolume
+    );
+  }
+
+  els.form.addEventListener("input", (event) => {
+    if (isSoundControl(event.target)) {
+      readSoundFromUi();
+      return;
+    }
+    updateSummary();
+  });
+
   els.form.addEventListener("submit", (event) => {
     event.preventDefault();
     const cfg = readConfig();
@@ -335,8 +503,15 @@
     els.reps.value = String(cfg.reps);
     els.sets.value = String(cfg.sets);
     els.setRest.value = String(cfg.setRest);
+    readSoundFromUi();
     ensureAudio();
     startSession(cfg);
+  });
+
+  els.soundVolume.addEventListener("change", () => {
+    readSoundFromUi();
+    ensureAudio();
+    beep("tick");
   });
 
   els.btnToggle.addEventListener("click", togglePause);
@@ -346,10 +521,9 @@
   els.btnEdit.addEventListener("click", endSession);
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden && running) {
-      togglePause();
-    }
+    if (document.hidden && running) togglePause();
   });
 
+  syncSoundUi();
   updateSummary();
 })();
