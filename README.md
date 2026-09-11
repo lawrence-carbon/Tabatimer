@@ -4,7 +4,9 @@ A simple browser workout timer for series, reps, and rest.
 
 **Live:** [lawrence-carbon.github.io/Tabatimer](https://lawrence-carbon.github.io/Tabatimer/)
 
-Open `index.html` in any modern browser — no build step, no install.
+Open `index.html` in any modern browser — no build step required.
+
+Installable as a PWA (Chrome/Edge “Install” in the URL bar) for a standalone, app-like window.
 
 ## What it does
 

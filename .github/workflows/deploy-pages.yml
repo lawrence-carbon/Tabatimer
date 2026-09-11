@@ -30,8 +30,9 @@ jobs:
 
       - name: Stage site files
         run: |
-          mkdir _site
-          cp index.html styles.css app.js _site/
+          mkdir -p _site/icons
+          cp index.html styles.css app.js manifest.webmanifest sw.js _site/
+          cp icons/*.png _site/icons/
           touch _site/.nojekyll
 
       - name: Upload artifact
