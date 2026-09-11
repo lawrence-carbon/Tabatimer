@@ -77,6 +77,106 @@
 
           <p class="summary" id="summary" aria-live="polite"></p>
 
+          <details class="options" id="options">
+            <summary class="options-toggle">
+              <span>Options</span>
+              <span class="options-hint">optional</span>
+            </summary>
+
+            <div class="options-body">
+              <div class="options-tabs" role="tablist" aria-label="Options">
+                <button
+                  type="button"
+                  class="options-tab is-active"
+                  role="tab"
+                  id="tab-sound"
+                  aria-selected="true"
+                  aria-controls="panel-sound"
+                  data-tab="sound"
+                >
+                  Sound
+                </button>
+              </div>
+
+              <div
+                class="options-panel"
+                role="tabpanel"
+                id="panel-sound"
+                aria-labelledby="tab-sound"
+                data-panel="sound"
+              >
+                <ul class="switch-list">
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Tick every second</span>
+                      </span>
+                      <input id="sound-tick" type="checkbox" />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Rep starts</span>
+                      </span>
+                      <input id="sound-rep-start" type="checkbox" checked />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Rep ends</span>
+                      </span>
+                      <input id="sound-rep-end" type="checkbox" />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Set starts</span>
+                      </span>
+                      <input id="sound-set-start" type="checkbox" checked />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Set ends</span>
+                      </span>
+                      <input id="sound-set-end" type="checkbox" checked />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Soft pulse on rest</span>
+                        <span class="switch-note">Quiet blip while resting</span>
+                      </span>
+                      <input id="sound-rest-pulse" type="checkbox" />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                </ul>
+
+                <label class="volume">
+                  <span class="volume-label">
+                    <span>App volume</span>
+                    <span class="volume-value" id="volume-value">70%</span>
+                  </span>
+                  <input id="sound-volume" type="range" min="0" max="100" value="70" step="1" />
+                  <span class="volume-note"
+                    >Controls Tabatimer only — use phone buttons for system volume.</span
+                  >
+                </label>
+              </div>
+            </div>
+          </details>
+
           <div class="cta-row">
             <button type="submit" class="btn btn-primary">Start session</button>
           </div>
