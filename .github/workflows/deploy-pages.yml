@@ -28,11 +28,16 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Stage site files
+        run: |
+          mkdir _site
+          cp index.html styles.css app.js _site/
+          touch _site/.nojekyll
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
-          include-hidden-files: false
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
