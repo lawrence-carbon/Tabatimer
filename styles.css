@@ -79,6 +79,8 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  container-type: inline-size;
+  container-name: shell;
 }
 
 .view[hidden] {
@@ -87,13 +89,22 @@ body {
 
 .brand {
   margin: 0;
-  font-size: clamp(3.4rem, 12vw, 6.5rem);
+  /* Floor was too high before (3.4rem) and overflowed narrow phones. */
+  font-size: clamp(2rem, 9.2vw, 6.5rem);
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
   line-height: 0.9;
   color: var(--acid);
   text-transform: uppercase;
+  max-width: 100%;
   animation: brand-in 0.8s var(--ease) both;
+}
+
+@supports (font-size: 1cqi) {
+  .brand {
+    /* Fit "TABATIMER" to the app column on any width. */
+    font-size: clamp(2rem, 11.2cqi, 6.5rem);
+  }
 }
 
 .brand-sm {
