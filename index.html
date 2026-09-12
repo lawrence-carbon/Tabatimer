@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a120e" />
+    <meta name="description" content="Tabatimer — simple workout timers for series, reps, and rest." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Tabatimer" />
+    <title>Tabatimer</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true"></div>
+
+    <main class="app">
+      <section id="setup" class="view setup-view" aria-labelledby="brand">
+        <header class="hero">
+          <p class="brand" id="brand">Tabatimer</p>
+          <h1 class="tagline">Dial in your series. Hit start. Keep moving.</h1>
+          <p class="lede">Set work length, reps, and rest — then let the clock call the shots.</p>
+        </header>
+
+        <form id="config-form" class="config" autocomplete="off">
+          <div class="field-grid">
+            <label class="field">
+              <span class="field-label">Work</span>
+              <span class="field-control">
+                <input id="work" name="work" type="number" min="1" max="600" value="40" required />
+                <span class="unit">sec</span>
+              </span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Rest</span>
+              <span class="field-control">
+                <input id="rest" name="rest" type="number" min="0" max="600" value="20" required />
+                <span class="unit">sec</span>
+              </span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Reps</span>
+              <span class="field-control">
+                <input id="reps" name="reps" type="number" min="1" max="99" value="8" required />
+                <span class="unit">×</span>
+              </span>
+            </label>
+
+            <label class="field">
+              <span class="field-label">Sets</span>
+              <span class="field-control">
+                <input id="sets" name="sets" type="number" min="1" max="20" value="1" required />
+                <span class="unit">×</span>
+              </span>
+            </label>
+
+            <label class="field field-wide">
+              <span class="field-label">Rest between sets</span>
+              <span class="field-control">
+                <input id="set-rest" name="setRest" type="number" min="0" max="900" value="90" required />
+                <span class="unit">sec</span>
+              </span>
+            </label>
+          </div>
+
+          <p class="summary" id="summary" aria-live="polite"></p>
+
+          <details class="options" id="options">
+            <summary class="options-toggle">
+              <span>Options</span>
+              <span class="options-hint">optional</span>
+            </summary>
+
+            <div class="options-body">
+              <div class="options-tabs" role="tablist" aria-label="Options">
+                <button
+                  type="button"
+                  class="options-tab is-active"
+                  role="tab"
+                  id="tab-sound"
+                  aria-selected="true"
+                  aria-controls="panel-sound"
+                  data-tab="sound"
+                >
+                  Sound
+                </button>
+              </div>
+
+              <div
+                class="options-panel"
+                role="tabpanel"
+                id="panel-sound"
+                aria-labelledby="tab-sound"
+                data-panel="sound"
+              >
+                <ul class="switch-list">
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Tick every second</span>
+                      </span>
+                      <input id="sound-tick" type="checkbox" />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Rep starts</span>
+                      </span>
+                      <input id="sound-rep-start" type="checkbox" checked />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Rep ends</span>
+                      </span>
+                      <input id="sound-rep-end" type="checkbox" />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Set starts</span>
+                      </span>
+                      <input id="sound-set-start" type="checkbox" checked />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Set ends</span>
+                      </span>
+                      <input id="sound-set-end" type="checkbox" checked />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                  <li>
+                    <label class="switch">
+                      <span class="switch-copy">
+                        <span class="switch-title">Soft pulse on rest</span>
+                        <span class="switch-note">Quiet blip while resting</span>
+                      </span>
+                      <input id="sound-rest-pulse" type="checkbox" />
+                      <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                  </li>
+                </ul>
+
+                <label class="volume">
+                  <span class="volume-label">
+                    <span>App volume</span>
+                    <span class="volume-value" id="volume-value">70%</span>
+                  </span>
+                  <input id="sound-volume" type="range" min="0" max="100" value="70" step="1" />
+                  <span class="volume-note"
+                    >Controls Tabatimer only — use phone buttons for system volume.</span
+                  >
+                </label>
+              </div>
+            </div>
+          </details>
+
+          <div class="cta-row">
+            <button type="submit" class="btn btn-primary">Start session</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="session" class="view session-view" hidden aria-labelledby="phase-label">
+        <header class="session-top">
+          <p class="brand brand-sm">Tabatimer</p>
+          <button type="button" id="btn-end" class="btn btn-ghost">End</button>
+        </header>
+
+        <div class="timer-stage">
+          <p class="phase" id="phase-label">Get ready</p>
+          <div class="clock" aria-live="polite">
+            <span id="clock" class="clock-digits">0:05</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div id="progress-bar" class="progress-bar"></div>
+          </div>
+          <p class="meta" id="session-meta">Rep 1 of 8 · Set 1 of 1</p>
+        </div>
+
+        <div class="session-controls">
+          <button type="button" id="btn-skip" class="btn btn-secondary">Skip</button>
+          <button type="button" id="btn-toggle" class="btn btn-primary">Pause</button>
+        </div>
+      </section>
+
+      <section id="done" class="view done-view" hidden aria-labelledby="done-title">
+        <p class="brand brand-sm">Tabatimer</p>
+        <h2 id="done-title" class="done-title">Session complete</h2>
+        <p class="done-copy" id="done-copy">You finished the full block.</p>
+        <div class="cta-row">
+          <button type="button" id="btn-again" class="btn btn-primary">Run it again</button>
+          <button type="button" id="btn-edit" class="btn btn-secondary">Edit setup</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
